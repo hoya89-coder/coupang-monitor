@@ -1,0 +1,62 @@
+<style>
+.btn { background: #238636; color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; cursor: pointer; margin-bottom: 12px; display: block; }
+.code-box { background: #0d1117; color: #e6edf3; border-radius: 8px; padding: 16px; font-size: 12px; font-family: monospace; white-space: pre; overflow-x: auto; max-height: 260px; overflow-y: auto; border: 1px solid #30363d; }
+.notice { font-size: 13px; color: var(--color-text-secondary); margin-top: 8px; }
+.copied { background: #1f6feb !important; }
+</style>
+
+<button class="btn" id="copyBtn" onclick="copyCode()">📋 클릭해서 yml 코드 복사하기</button>
+<div class="code-box" id="codeBox"># .github/workflows/coupang_monitor.yml
+name: Coupang Daily Monitor
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run monitor
+        env:
+          COUPANG_ACCESS_KEY:  ${{ secrets.COUPANG_ACCESS_KEY }}
+          COUPANG_SECRET_KEY:  ${{ secrets.COUPANG_SECRET_KEY }}
+          COUPANG_VENDOR_ID:   ${{ secrets.COUPANG_VENDOR_ID }}
+          SLACK_WEBHOOK_URL:   ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_ALERT_CHANNEL: ${{ secrets.SLACK_ALERT_CHANNEL }}
+        run: python coupang_monitor.py
+
+      - name: Notify on workflow failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"text":"⚠️ 쿠팡 모니터링 스크립트 실행 실패 — GitHub Actions 로그를 확인해 주세요."}'</div>
+<p class="notice" id="notice">버튼을 누르면 전체 코드가 클립보드에 복사됩니다</p>
+<script>
+function copyCode() {
+  const text = document.getElementById('codeBox').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ 복사 완료!';
+    btn.classList.add('copied');
+    document.getElementById('notice').textContent = 'GitHub 파일 편집창에 붙여넣기(Ctrl+V) 하세요!';
+  });
+}
+</script>
